@@ -44,8 +44,7 @@ class Scrapper:
             title: str = annonce.find("div", {"class": "title mt-2"}).text
             price: float = float(annonce.find("div", {"class": "col-12 col-sm-12 col-md-12 col-lg-6 col-xl-6 p-0 price text-center text-lg-left mb-2 mb-lg-0"}).text.replace("€", "").replace(" ", "").replace(",", "."))
             image : str = annonce.find("img", {"class": "rounded"})["src"]
-            location : str = annonce.find("div", {"class": "location mt-1"})
-            annonces_on_this_page.append(Annonce(url, title, price, [image], location))
+            annonces_on_this_page.append(Annonce(url, title, price, images=[image]))
         return annonces_on_this_page
 
     @staticmethod
@@ -59,7 +58,7 @@ class Scrapper:
         description = soup.find("div", {"class": "col-12 p-1 text-left"}).find('p').text
         
 
-        price = float(soup.find("div", {"class": "mb-1 h2 text-primary"}).text.replace("€ ", "").replace(",", "."))
+        price = float(soup.find("div", {"class": "mb-1 h2 text-primary"}).text.replace("€", "").replace(",", ".").replace(" ", ""))
         
 
         info = soup.find("div", {"class": "col-12 p-1 text-center"}).findAll("div")
@@ -90,10 +89,11 @@ class Scrapper:
 
         contact = soup.find("div", {"class": "col-12 col-md-4 p-1 text-center"}).findAll("button")
 
-        email = str(contact[0]).replace('<button class="btn btn-outline-primary btn-xs btn-block shadow-sm" id="btn_view_email" onclick="display_text(this,', "").replace(');add_clic_annonce(25613);">Voir l', "").replace('email</button>', "").replace("'", "")
-        
+        id = url.split("-")[-1]
 
-        phone_number = str(contact[1]).replace('<button class="btn btn-outline-primary btn-xs btn-block shadow-sm" id="btn_view_phone" onclick="display_text(this,', "").replace(');add_clic_annonce(25613);">Voir le numéro</button>', "").replace("'", "")
-        
+        email = str(contact[0]).replace('<button class="btn btn-outline-primary btn-xs btn-block shadow-sm" id="btn_view_email" onclick="display_text(this,', "").replace(f');add_clic_annonce({id});">Voir l', "").replace('email</button>', "").replace("'", "")
+
+        phone_number = str(contact[1]).replace('<button class="btn btn-outline-primary btn-xs btn-block shadow-sm" id="btn_view_phone" onclick="display_text(this,', "").replace(f');add_clic_annonce({id});">Voir le numéro</button>', "").replace("'", "")
 
         return Annonce(url, title, price, description, etat, shipping, category, likes, images, phone_number, email, location, publied_at)
+

@@ -2,7 +2,7 @@ from bs4 import BeautifulSoup
 import requests
 
 class Annonce:
-    def __init__(self, title: str, description: str, price: float, etat: str, shipping: bool, category: str, likes: str, images: str, phone_number: str, email: str, location: str, publied_at: str, url: str):
+    def __init__(self, url: str, title: str, price: float, description: str = "", etat: str = "", shipping: bool = False, category: str = "", likes: int = 0, images: list = [], phone_number: str = "", email: str = "", location: str = "", publied_at: str = ""):
         self.title = title
         self.description = description
         self.price = price
@@ -19,12 +19,34 @@ class Annonce:
 
 class Scrapper:
     @staticmethod
-    def search_by_title (title: str) -> list[Annonce]:
-        pass
-    
+    def search_by_title (title: str, min_price : int = 0, max_price : int = 10000, category : str = "") -> list[Annonce]:
+        url = "https://affairespc.com/search?"
+        url += "q="+ title
+        url += "&price="+str(min_price)
+        url += "%2C"+str(max_price)
+
+        categories=['Processeur', 'Carte mère', 'Mémoire vive', 'Carte graphique', 'Ventirad', 'Watercooling', 'SSD M.2', 'SSD 2.5', 'Disque Dur', 'Boitier PC', 'Alimentation', 'Ventilateur', 'Ecran', 'Clavier', 'Souris', 'Tapis de souris', 'Casque', 'Siège gamer', 'Réseau', 'Kit', 'Enceinte', 'Microphone', 'Manette', 'Divers', 'PC Gamer', 'PC Portable', 'PC Portable Gamer', 'PC Bureautique']
+        if category in categories:
+            url += "&cat=" + str(categories.index(category)+2)
+        
+        url+="&order=new"
+
+        return Scrapper.search_by_url(url)
+
     @staticmethod
     def search_by_url (url: str) -> list[Annonce]:
-        pass
+        html_content = requests.get(url).text
+        soup = BeautifulSoup(html_content, 'html.parser')
+
+        annonces_on_this_page: list[Annonce] = []
+        for annonce in soup.findAll("div", {"class": "col-12 col-sm-6 col-md-4 col-lg-3 col-xl-3 p-0 effect-zoom-sm"}):
+            url: str = annonce.find("a")["href"]
+            title: str = annonce.find("div", {"class": "title mt-2"}).text
+            price: float = float(annonce.find("div", {"class": "col-12 col-sm-12 col-md-12 col-lg-6 col-xl-6 p-0 price text-center text-lg-left mb-2 mb-lg-0"}).text.replace("€", "").replace(" ", "").replace(",", "."))
+            image : str = annonce.find("img", {"class": "rounded"})["src"]
+            location : str = annonce.find("div", {"class": "location mt-1"})
+            annonces_on_this_page.append(Annonce(url, title, price, [image], location))
+        return annonces_on_this_page
 
     @staticmethod
     def get_this_page (url: str) -> Annonce:  
@@ -74,8 +96,4 @@ class Scrapper:
         phone_number = str(contact[1]).replace('<button class="btn btn-outline-primary btn-xs btn-block shadow-sm" id="btn_view_phone" onclick="display_text(this,', "").replace(');add_clic_annonce(25613);">Voir le numéro</button>', "").replace("'", "")
         
 
-        return Annonce(title, description, price, etat, shipping, category, likes, images, phone_number, email, location, publied_at, url)
-
-annonce = Scrapper.get_this_page("http://affairespc.com/annonce/pc-gamer-nitro-5-25613")
-
-print(annonce.title)
+        return Annonce(url, title, price, description, etat, shipping, category, likes, images, phone_number, email, location, publied_at)
